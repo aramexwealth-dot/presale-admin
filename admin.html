@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard - Presale Orders</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#111; color:#fff; padding:20px; }
+    table { width:100%; border-collapse: collapse; margin-top:20px; }
+    th, td { border:1px solid #444; padding:10px; text-align:left; }
+    th { background:#333; }
+    button { margin-top: 10px; padding:8px 12px; border:none; background:#f00; color:#fff; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <h1>📊 Presale Admin Dashboard</h1>
+  
+  <!-- Login Form -->
+  <div id="loginSection">
+    <h2>Admin Login</h2>
+    <input type="email" id="email" placeholder="Email"><br><br>
+    <input type="password" id="password" placeholder="Password"><br><br>
+    <button id="loginBtn">Login</button><br><br>
+    <button id="signupBtn">Sign Up</button>
+  </div>
+
+  <!-- Orders Section -->
+  <div id="ordersSection" style="display:none;">
+    <h2>Presale Orders</h2>
+    <button id="logoutBtn">Logout</button>
+    <table>
+      <thead>
+        <tr>
+          <th>ETH Address</th>
+          <th>Amount (ETH)</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody id="ordersTable"></tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    // Import the necessary Firebase SDKs
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } 
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, collection, getDocs, query, orderBy } 
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDVpkMqPt-B4MZHjrmjPv6nQILHVHLpcwc",
+      authDomain: "presale-b1a8c.firebaseapp.com",
+      projectId: "presale-b1a8c",
+      storageBucket: "presale-b1a8c.firebasestorage.app",
+      messagingSenderId: "559510783552",
+      appId: "1:559510783552:web:2dbe234ab42569d6a2c1a5",
+      measurementId: "G-4DVQ8JH89Z"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);  // Initialize Firebase Authentication
+    const db = getFirestore(app); // Initialize Firestore
+
+    // Login Function
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        alert("❌ Login failed: " + err.message);
+      }
+    });
+
+    // Sign Up Function
+    document.getElementById("signupBtn").addEventListener("click", async () => {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+        alert("✅ Sign-up successful! Now log in.");
+      } catch (err) {
+        alert("❌ Sign-up failed: " + err.message);
+      }
+    });
+
+    // Logout Function
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await signOut(auth);
+    });
+
+    // Monitor Authentication State
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.getElementById("loginSection").style.display = "none";
+        document.getElementById("ordersSection").style.display = "block";
+        loadOrders();
+      } else {
+        document.getElementById("loginSection").style.display = "block";
+        document.getElementById("ordersSection").style.display = "none";
+      }
+    });
+
+    // Load Orders from Firestore
+    async function loadOrders() {
+      const q = query(collection(db, "presaleOrders"), orderBy("createdAt", "desc"));
+      const snapshot = await getDocs(q);
+      const tbody = document.getElementById("ordersTable");
+      tbody.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const row = `<tr>
+          <td>${data.ethAddress}</td>
+          <td>${data.ethAmount}</td>
+          <td>${data.createdAt?.toDate().toLocaleString() || "—"}</td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+    }
+  </script>
+</body>
+</html>
